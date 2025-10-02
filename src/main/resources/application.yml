@@ -1,0 +1,29 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/fixturesdb
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    baseline-on-migrate: true
+    baseline-version: 0
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        order_inserts: true
+        order_updates: true
+        jdbc:
+          batch_size: 100
+        format_sql: true
+
+aws:
+  region: us-east-2
+  ses:
+    from: "vthangvu98@gmail.com"
+
+rapidapi:
+  key: 89316196bfmsh1787170b39e4ca0p18c6b7jsn63ad29af3405
+  host: free-api-live-football-data.p.rapidapi.com
