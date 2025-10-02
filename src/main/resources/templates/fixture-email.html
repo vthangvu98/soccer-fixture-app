@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title th:text="${homeTeamName} + ' vs ' + ${awayTeamName}">Fixture</title>
+</head>
+<body style="font-family: Arial, sans-serif; color:#222;">
+<h2 th:text="${leagueName}">League</h2>
+<h3>
+    <span th:text="${homeTeamName}">Home</span>
+    vs
+    <span th:text="${awayTeamName}">Away</span>
+</h3>
+
+<p>
+    Kickoff:
+    <strong th:text="${#temporals.format(kickoffLocal, 'EEE, MMM d yyyy HH:mm')}"></strong>
+    (<span th:text="${kickoffTz}"></span>)
+</p>
+
+<p th:if="${homeScore != null and awayScore != null}">
+    Final score:
+    <strong th:text="${homeScore}"></strong>
+    –
+    <strong th:text="${awayScore}"></strong>
+</p>
+
+<hr/>
+<small>You're receiving this because you subscribed to fixture alerts.</small>
+</body>
+</html>
