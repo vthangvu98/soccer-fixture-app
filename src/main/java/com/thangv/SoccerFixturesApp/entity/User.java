@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-// User.java
 @Entity
 @Table(name = "users")
 @Getter
@@ -15,12 +14,12 @@ public class User {
     private Long id;
 
     @Column(unique = true)
-    private String email;       // for EMAIL channel
+    private String email;
 
     @Column(unique = true)
-    private String phone;       // for SMS later
+    private String phone;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name = "tz")
     private String timezone = "UTC";
 
     @Column(nullable = false)

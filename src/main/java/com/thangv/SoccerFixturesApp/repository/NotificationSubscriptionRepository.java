@@ -9,8 +9,10 @@ import java.util.Collection;
 import java.util.List;
 
 public interface NotificationSubscriptionRepository extends JpaRepository<NotificationSubscription, Long> {
+
     @Query("""
               select s from NotificationSubscription s
+              join fetch s.user
               where s.active = true and s.channel = 'EMAIL'
                 and s.targetType = 'LEAGUE' and s.targetId = :leagueId
             """)
@@ -18,6 +20,7 @@ public interface NotificationSubscriptionRepository extends JpaRepository<Notifi
 
     @Query("""
               select s from NotificationSubscription s
+              join fetch s.user
               where s.active = true and s.channel = 'EMAIL'
                 and s.targetType = 'TEAM' and s.targetId in :teamIds
             """)

@@ -12,6 +12,9 @@ public interface FixtureRepository extends JpaRepository<Fixture, Long> {
 
     @Query("""
                 select f from Fixture f
+                join fetch f.league
+                join fetch f.homeTeam
+                join fetch f.awayTeam
                 where f.matchUtc is not null
                   and f.matchUtc >= :from
                   and f.matchUtc <  :to
@@ -19,4 +22,3 @@ public interface FixtureRepository extends JpaRepository<Fixture, Long> {
             """)
     List<Fixture> findStartingBetween(@Param("from") Instant from, @Param("to") Instant to);
 }
-

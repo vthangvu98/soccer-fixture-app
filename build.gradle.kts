@@ -32,6 +32,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter-cache")
+    implementation("org.springframework.boot:spring-boot-starter-quartz")
     implementation("org.flywaydb:flyway-core:10.17.0")
     implementation("org.flywaydb:flyway-database-postgresql:10.17.0")
     implementation("com.fasterxml.jackson.module:jackson-module-afterburner")
