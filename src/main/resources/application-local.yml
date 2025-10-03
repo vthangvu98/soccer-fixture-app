@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/fixturesdb
+    username: postgres
+    password: postgres
+
+rapidapi:
+  key: 89316196bfmsh1787170b39e4ca0p18c6b7jsn63ad29af3405
+
+aws:
+  region: us-east-2
+  ses:
+    from: "vthangvu98@gmail.com"

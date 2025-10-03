@@ -29,31 +29,31 @@ public class LeagueService {
                 || leagueResponse.getResponse().getLeagues().isEmpty()) {
             return 0;
         }
-            int count = 0;
-            for (CountryLeagueResponse country : leagueResponse.getResponse().getLeagues()) {
-                if (country.getLeagues() == null) continue;
-                for (LeagueItem leagueItem : country.getLeagues()) {
-                    League league = leagueRepository.findById(leagueItem.getId()).orElseGet(League::new);
+        int count = 0;
+        for (CountryLeagueResponse country : leagueResponse.getResponse().getLeagues()) {
+            if (country.getLeagues() == null) continue;
+            for (LeagueItem leagueItem : country.getLeagues()) {
+                League league = leagueRepository.findById(leagueItem.getId()).orElseGet(League::new);
 
-                    league.setId(leagueItem.getId());
-                    league.setName(leagueItem.getName());
-                    league.setCountry(country.getName());
-                    league.setCountryCode(country.getCcode());
-                    league.setLogoUrl(leagueItem.getLogo());
+                league.setId(leagueItem.getId());
+                league.setName(leagueItem.getName());
+                league.setCountry(country.getName());
+                league.setCountryCode(country.getCcode());
+                league.setLogoUrl(leagueItem.getLogo());
 
-                    leagueRepository.save(league);
-                    count++;
-                }
+                leagueRepository.save(league);
+                count++;
             }
-            return count;
+        }
+        return count;
     }
 
     public void importSingleLeague(LeagueDto leagueInput) {
 
         League league = new League();
 
-        leagueInput.setName(leagueInput.getName());
-        league.setCountry(leagueInput.getName());
+        league.setName(leagueInput.getName());
+        league.setCountry(leagueInput.getCountry());
         league.setCountryCode(leagueInput.getCountryCode());
         league.setLogoUrl(String.valueOf(Optional.ofNullable(leagueInput.getLogoUrl())));
 
