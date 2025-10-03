@@ -1,12 +1,26 @@
 package com.thangv.SoccerFixturesApp.domain;
 
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 @Data
 public class EmailSubscribeRequest {
+    @NotBlank
+    @Email
     private String email;
-    private String targetType;      // TEAM | LEAGUE
+
+    @NotBlank
+    @Pattern(regexp = "TEAM|LEAGUE")
+    private String targetType;
+
+    @NotNull
+    @Positive
     private Integer targetId;
-    private Integer minutesBeforeKickoff;
-    private String timezone;
+
+    @Min(0)
+    @Max(1440) // max 24 hours
+    private Integer minutesBeforeKickoff = 60;
+
+    @NotBlank
+    private String timezone = "UTC";
 }

@@ -2,6 +2,7 @@ package com.thangv.SoccerFixturesApp.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -12,15 +13,55 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    @Profile("dev")
+    SecurityFilterChain devSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable) // disable for simple POST/PUT testing; re-enable later
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/**", "/leagues/**").permitAll()
+                        .requestMatchers(
+                                "/api/**",
+                                "/leagues/**",
+                                "/teams/**",
+                                "/fixtures/**",
+                                "/users/**",
+                                "/rapidapi/**",
+                                "/actuator/health"
+                        ).permitAll()
                         .anyRequest().permitAll()
                 )
-                .headers(h -> h.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)) // H2 console frames
-                .httpBasic(Customizer.withDefaults()); // or remove if you don't want any auth at all
+                .headers(h -> h.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
+                .httpBasic(Customizer.withDefaults());
+
+        return http.build();
+    }
+
+    @Bean
+    @Profile("prod")
+    SecurityFilterChain prodSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers("/api/**")
+                )
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/actuator/health",
+                                "/leagues",
+                                "/teams",
+                                "/fixtures/all"
+                        ).permitAll()
+
+                        .requestMatchers(
+                                "/leagues/import/**",
+                                "/teams/importByLeagueId/**",
+                                "/fixtures/importByDate",
+                                "/api/notifications/**",
+                                "/api/subscriptions/**"
+                        ).authenticated()  // TODO: Replace with .hasRole("ADMIN") when roles added
+
+                        // All other requests require authentication
+                        .anyRequest().authenticated()
+                )
+                .httpBasic(Customizer.withDefaults());  // TODO: Replace with JWT
 
         return http.build();
     }

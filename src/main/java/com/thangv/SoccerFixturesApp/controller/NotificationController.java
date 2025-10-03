@@ -1,8 +1,10 @@
 package com.thangv.SoccerFixturesApp.controller;
 
+import com.thangv.SoccerFixturesApp.domain.FixtureEmailRequest;
 import com.thangv.SoccerFixturesApp.domain.FixtureEmailResponse;
 import com.thangv.SoccerFixturesApp.repository.FixtureRepository;
 import com.thangv.SoccerFixturesApp.service.NotificationService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,7 +20,7 @@ public class NotificationController {
     private final FixtureRepository fixtureRepository;
 
     @PostMapping("/email/fixture")
-    public FixtureEmailResponse sendFixtureEmail(@RequestBody FixtureEmailRequest request) {
+    public FixtureEmailResponse sendFixtureEmail(@Valid @RequestBody FixtureEmailRequest request) {
         var fixture = fixtureRepository.findById(request.getFixtureId())
                 .orElseThrow(() -> new IllegalArgumentException("Fixture not found: " + request.getFixtureId()));
 
