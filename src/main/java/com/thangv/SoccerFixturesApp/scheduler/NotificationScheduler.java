@@ -1,5 +1,6 @@
-package com.thangv.SoccerFixturesApp.component;
+package com.thangv.SoccerFixturesApp.scheduler;
 
+import com.thangv.SoccerFixturesApp.component.EmailTemplateRenderer;
 import com.thangv.SoccerFixturesApp.domain.FixtureEmailModel;
 import com.thangv.SoccerFixturesApp.domain.NotificationEmail;
 import com.thangv.SoccerFixturesApp.entity.Fixture;
@@ -219,16 +220,30 @@ public class NotificationScheduler {
         ZoneId userZone = ZoneId.of(user.getTimezone());
         ZonedDateTime kickoffLocal = ZonedDateTime.ofInstant(fixture.getMatchUtc(), userZone);
 
-        // Build email model
-        FixtureEmailModel model = new FixtureEmailModel(
-                league.getName(),
-                home.getName(),
-                away.getName(),
-                kickoffLocal,
-                userZone.getId(),
-                fixture.getHomeScore(),
-                fixture.getAwayScore()
-        );
+        // Calculate match status
+        ZonedDateTime now = ZonedDateTime.now(userZone);
+        String matchStatus;
+        if (kickoffLocal.isAfter(now)) {
+            matchStatus = "UPCOMING";
+        } else if (kickoffLocal.plusHours(2).isAfter(now)) {
+            matchStatus = "LIVE";
+        } else {
+            matchStatus = "ENDED";
+        }
+
+        // Build email model with builder pattern
+        FixtureEmailModel model = FixtureEmailModel.builder()
+                .leagueName(league.getName())
+                .homeTeamName(home.getName())
+                .awayTeamName(away.getName())
+                .homeTeamLogo(home.getLogoUrl())
+                .awayTeamLogo(away.getLogoUrl())
+                .kickoffLocal(kickoffLocal)
+                .kickoffTz(userZone.getId())
+                .homeScore(fixture.getHomeScore())
+                .awayScore(fixture.getAwayScore())
+                .matchStatus(matchStatus)
+                .build();
 
         // Render HTML
         String html = renderer.renderFixture(model);

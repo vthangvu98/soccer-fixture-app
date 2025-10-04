@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -62,8 +63,8 @@ public class FixtureService {
         log.debug("Found {} leagues and {} teams in database",
                 availableLeagueIds.size(), availableTeamIds.size());
 
-        final var missingLeagues = new HashSet<Integer>();
-        final var missingTeams = new HashSet<Integer>();
+        final Set<String> missingLeagues = new HashSet<>();
+        final Set<String> missingTeams = new HashSet<>();
         final Instant now = Instant.now();
 
         var fixtures = response.getResponse().stream()
@@ -74,8 +75,31 @@ public class FixtureService {
         if (fixtures.isEmpty()) {
             log.warn("No valid fixtures to import for date: {} (all filtered out)", date);
         } else {
-            log.info("Preparing to save {} fixtures", fixtures.size());
+            // Check which fixtures already exist
+            Set<Long> fixtureIds = fixtures.stream().map(Fixture::getId).collect(Collectors.toSet());
+            Set<Long> existingIds = fixtureRepository.findAllById(fixtureIds).stream()
+                    .map(Fixture::getId)
+                    .collect(Collectors.toSet());
+
+            Set<Long> newIds = fixtureIds.stream().filter(id -> !existingIds.contains(id)).collect(Collectors.toSet());
+
+            int newCount = newIds.size();
+            int updateCount = existingIds.size();
+
+            log.info("Processing {} fixtures: {} new, {} updates", fixtures.size(), newCount, updateCount);
+
+            if (log.isDebugEnabled() && !newIds.isEmpty()) {
+                log.debug("New fixture IDs: {}", newIds);
+            }
+            if (log.isDebugEnabled() && !existingIds.isEmpty()) {
+                log.debug("Updating fixture IDs: {}", existingIds);
+            }
+
             saveInBatches(fixtures);
+
+            long duration = System.currentTimeMillis() - startTime;
+            log.info("Import complete for {}: {} new fixtures inserted, {} existing fixtures updated ({}ms)",
+                    date, newCount, updateCount, duration);
         }
 
         if (!missingLeagues.isEmpty()) {
@@ -85,20 +109,16 @@ public class FixtureService {
             log.warn("Missing {} teams (not in DB): {}", missingTeams.size(), missingTeams);
         }
 
-        long duration = System.currentTimeMillis() - startTime;
-        log.info("Successfully imported {} fixtures for date: {} in {}ms",
-                fixtures.size(), date, duration);
-
         return new FixtureImportResult(fixtures.size(),
                 Collections.unmodifiableSet(missingLeagues),
                 Collections.unmodifiableSet(missingTeams));
     }
 
     private Stream<Fixture> leagueToFixtures(LeagueBlock leagueBlock, Set<Integer> availableLeagueIds, Set<Integer> availableTeamIds,
-                                             Set<Integer> missingLeagues, Set<Integer> missingTeams, Instant now) {
+                                             Set<String> missingLeagues, Set<String> missingTeams, Instant now) {
         if (!availableLeagueIds.contains(leagueBlock.getId())) {
-            log.debug("Skipping league {} - not in database", leagueBlock.getId());
-            missingLeagues.add(leagueBlock.getId());
+            log.debug("Skipping league {} - not in database", leagueBlock.getName());
+            missingLeagues.add(leagueBlock.getName());
             return Stream.empty();
         }
 
@@ -109,27 +129,28 @@ public class FixtureService {
                         -> matchToFixtureIfTeamsPresent(matchDetail, leagueBlock.getId(), availableTeamIds, missingTeams, now));
     }
 
-    private Stream<Fixture> matchToFixtureIfTeamsPresent(MatchDetail m, int leagueId, Set<Integer> availableTeamIds,
-                                                         Set<Integer> missingTeams, Instant now) {
-        var homeId = m.getHome().getId();
-        var awayId = m.getAway().getId();
-
+    private Stream<Fixture> matchToFixtureIfTeamsPresent(MatchDetail matchDetail, int leagueId, Set<Integer> availableTeamIds,
+                                                         Set<String> missingTeams, Instant now) {
+        var homeId = matchDetail.getHome().getId();
+        var awayId = matchDetail.getAway().getId();
+        var homeTeamName = matchDetail.getHome().getName();
+        var awayTeamName = matchDetail.getAway().getName();
         boolean missing = false;
         if (!availableTeamIds.contains(homeId)) {
-            log.debug("Match {} - home team {} not found in database", m.getId(), homeId);
-            missingTeams.add(homeId);
+            log.debug("Match {} - home team {} not found in database", matchDetail.getId(), homeId);
+            missingTeams.add(homeTeamName);
             missing = true;
         }
         if (!availableTeamIds.contains(awayId)) {
-            log.debug("Match {} - away team {} not found in database", m.getId(), awayId);
-            missingTeams.add(awayId);
+            log.debug("Match {} - away team {} not found in database", matchDetail.getId(), awayId);
+            missingTeams.add(awayTeamName);
             missing = true;
         }
         if (missing) {
             return Stream.empty();
         }
 
-        return Stream.of(mapToFixture(m, leagueId, now));
+        return Stream.of(mapToFixture(matchDetail, leagueId, now));
     }
 
     private void saveInBatches(List<Fixture> fixtures) {
@@ -143,8 +164,6 @@ public class FixtureService {
             log.debug("Saving batch {}/{} ({} fixtures)", batchNumber, totalBatches, end - i);
             fixtureRepository.saveAll(fixtures.subList(i, end));
         }
-
-        log.info("Completed saving all {} fixtures", fixtures.size());
     }
 
     private Fixture mapToFixture(MatchDetail m, int leagueId, Instant now) {

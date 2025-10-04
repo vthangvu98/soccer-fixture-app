@@ -25,18 +25,35 @@ public class NotificationService {
     private final TeamRepository teamRepo;
     private final LeagueRepository leagueRepo;
 
+    /**
+     * Sends a fixture reminder email to the specified recipient.
+     *
+     * @param to       Email address of recipient
+     * @param fixture  The fixture to send notification about
+     * @param timezone User's timezone (e.g., "America/New_York", "Europe/London")
+     * @param subject  Email subject line
+     * @throws IllegalArgumentException if timezone is invalid
+     */
     public void sendFixtureEmail(String to, Fixture fixture, String timezone, String subject) {
         log.info("Preparing fixture email for fixture {} to {}", fixture.getId(), to);
 
+        // Fetch team and league details
         var home = teamRepo.getReferenceById(fixture.getHomeTeam().getId());
         var away = teamRepo.getReferenceById(fixture.getAwayTeam().getId());
         var leagueName = leagueRepo.findById(fixture.getLeague().getId())
                 .map(League::getName)
                 .orElse("League");
 
+        log.info("Home team: {} (ID: {})", home.getName(), home.getId());
+        log.info("Away team: {} (ID: {})", away.getName(), away.getId());
+        log.info("Home logo URL: {}", home.getLogoUrl());
+        log.info("Away logo URL: {}", away.getLogoUrl());
+
+        // Parse and validate timezone
         ZoneId zoneId = parseAndValidateTimezone(timezone);
         log.debug("Using timezone: {} for user {}", zoneId.getId(), to);
 
+        // Convert match time to user's timezone
         ZonedDateTime kickoffLocal = null;
         if (fixture.getMatchUtc() != null) {
             kickoffLocal = ZonedDateTime.ofInstant(fixture.getMatchUtc(), zoneId);
@@ -48,16 +65,33 @@ public class NotificationService {
             log.warn("Fixture {} has no match time set", fixture.getId());
         }
 
-        // Build email model
-        var model = new FixtureEmailModel(
-                leagueName,
-                home.getName(),
-                away.getName(),
-                kickoffLocal,
-                zoneId.getId(),
-                fixture.getHomeScore(),
-                fixture.getAwayScore()
-        );
+        // Calculate match status
+        ZonedDateTime now = ZonedDateTime.now(zoneId);
+        String matchStatus;
+        if (kickoffLocal.isAfter(now)) {
+            matchStatus = "UPCOMING";
+        } else if (kickoffLocal.plusHours(2).isAfter(now)) {
+            matchStatus = "LIVE";
+        } else {
+            matchStatus = "ENDED";
+        }
+
+        // Build email model with builder pattern
+        var model = FixtureEmailModel.builder()
+                .leagueName(leagueName)
+                .homeTeamName(home.getName())
+                .awayTeamName(away.getName())
+                .homeTeamLogo(home.getLogoUrl())
+                .awayTeamLogo(away.getLogoUrl())
+                .kickoffLocal(kickoffLocal)
+                .kickoffTz(zoneId.getId())
+                .homeScore(fixture.getHomeScore())
+                .awayScore(fixture.getAwayScore())
+                .matchStatus(matchStatus)
+                .build();
+
+        log.info("Email model created: league={}, home={}, away={}",
+                model.getLeagueName(), model.getHomeTeamName(), model.getAwayTeamName());
 
         // Render HTML template
         String html = renderer.renderFixture(model);
@@ -78,6 +112,13 @@ public class NotificationService {
         }
     }
 
+    /**
+     * Parses and validates a timezone string.
+     * Falls back to UTC if invalid.
+     *
+     * @param timezone Timezone string (e.g., "America/New_York", "UTC", "Europe/London")
+     * @return Valid ZoneId, defaults to UTC if invalid
+     */
     private ZoneId parseAndValidateTimezone(String timezone) {
         // Handle null or empty
         if (timezone == null || timezone.isBlank()) {
@@ -85,19 +126,30 @@ public class NotificationService {
             return ZoneId.of("UTC");
         }
 
+        // Trim whitespace
         String trimmed = timezone.trim();
 
         try {
+            // Try to parse the timezone
             ZoneId zoneId = ZoneId.of(trimmed);
             log.debug("Successfully parsed timezone: {}", zoneId.getId());
             return zoneId;
+
         } catch (DateTimeException e) {
+            // Invalid timezone - log warning and fall back to UTC
             log.warn("Invalid timezone '{}' provided. Falling back to UTC. Error: {}",
                     trimmed, e.getMessage());
             return ZoneId.of("UTC");
         }
     }
 
+    /**
+     * Validates if a timezone string is valid without converting it.
+     * Useful for validation at the API layer.
+     *
+     * @param timezone Timezone string to validate
+     * @return true if valid, false otherwise
+     */
     public boolean isValidTimezone(String timezone) {
         if (timezone == null || timezone.isBlank()) {
             return false;

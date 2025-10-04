@@ -1,31 +1,271 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8"/>
-    <title th:text="${homeTeamName} + ' vs ' + ${awayTeamName}">Fixture</title>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Match Reminder</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #1e293b;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            padding: 28px;
+            text-align: center;
+        }
+
+        .league-name {
+            font-size: 22px;
+            font-weight: 700;
+            color: white;
+            letter-spacing: 0.5px;
+        }
+
+        .match-section {
+            padding: 48px 24px 32px 24px;
+        }
+
+        .teams-row {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        .team-column {
+            display: table-cell;
+            width: 40%;
+            text-align: center;
+            vertical-align: middle;
+            padding: 0 10px;
+        }
+
+        .center-column {
+            display: table-cell;
+            width: 20%;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .team-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin: 16px 0;
+            line-height: 1.3;
+        }
+
+        .team-score {
+            font-size: 56px;
+            font-weight: 700;
+            color: #60a5fa;
+            margin-top: 12px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 12px 28px;
+            border-radius: 28px;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .status-upcoming {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .status-live {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .status-ended {
+            background-color: #334155;
+            color: #94a3b8;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .match-info {
+            overflow-x: auto;
+        }
+
+
+        .info-table {
+            margin: 0 auto; /* centers table */
+            border-collapse: separate;
+            border-spacing: 8px;
+            table-layout: auto; /* allow dynamic sizing */
+        }
+
+
+        .info-box {
+            padding: 16px 10px;
+            border-radius: 12px;
+            text-align: center;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+
+
+        .info-box-date {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+
+        .info-box-time {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        }
+
+        .info-box-timezone {
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        }
+
+        .info-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .info-value {
+            font-size: 15px;
+            color: white;
+            font-weight: 700;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        .footer {
+            background-color: #0f172a;
+            padding: 28px;
+            text-align: center;
+            border-top: 1px solid #334155;
+        }
+
+        .footer p {
+            margin: 8px 0;
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .footer a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive Styles */
+        @media only screen and (max-width: 600px) {
+            .teams-row {
+                display: block;
+            }
+            .team-column, .center-column {
+                display: block;
+                width: 100%;
+                margin: 24px 0;
+            }
+            .team-score {
+                font-size: 48px;
+            }
+            .info-box {
+                display: block;
+                width: 100% !important;
+                margin-bottom: 12px;
+            }
+            .info-table {
+                border-spacing: 8px;
+            }
+        }
+    </style>
 </head>
-<body style="font-family: Arial, sans-serif; color:#222;">
-<h2 th:text="${leagueName}">League</h2>
-<h3>
-    <span th:text="${homeTeamName}">Home</span>
-    vs
-    <span th:text="${awayTeamName}">Away</span>
-</h3>
+<body>
+<div class="email-container">
+    <!-- Header with League Name -->
+    <div class="header">
+        <div class="league-name" th:text="${leagueName}">Premier League</div>
+    </div>
 
-<p>
-    Kickoff:
-    <strong th:text="${#temporals.format(kickoffLocal, 'EEE, MMM d yyyy HH:mm')}"></strong>
-    (<span th:text="${kickoffTz}"></span>)
-</p>
+    <!-- Match Section -->
+    <div class="match-section">
+        <div class="teams-row">
+            <!-- Home Team -->
+            <div class="team-column">
+                <div class="team-name" th:text="${homeTeamName}">Manchester United</div>
+                <div class="team-score" th:if="${homeScore != null}" th:text="${homeScore}">2</div>
+                <div class="team-score" th:if="${homeScore == null}">-</div>
+            </div>
 
-<p th:if="${homeScore != null and awayScore != null}">
-    Final score:
-    <strong th:text="${homeScore}"></strong>
-    –
-    <strong th:text="${awayScore}"></strong>
-</p>
+            <!-- Center - Status Badge -->
+            <div class="center-column">
+                <span class="status-badge status-upcoming" th:if="${matchStatus == 'UPCOMING'}">Upcoming</span>
+                <span class="status-badge status-live" th:if="${matchStatus == 'LIVE'}">Live</span>
+                <span class="status-badge status-ended" th:if="${matchStatus == 'ENDED'}">Ended</span>
+            </div>
 
-<hr/>
-<small>You're receiving this because you subscribed to fixture alerts.</small>
+            <!-- Away Team -->
+            <div class="team-column">
+                <div class="team-name" th:text="${awayTeamName}">Liverpool</div>
+                <div class="team-score" th:if="${awayScore != null}" th:text="${awayScore}">1</div>
+                <div class="team-score" th:if="${awayScore == null}">-</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Match Info at Bottom -->
+    <div class="match-info">
+        <table class="info-table">
+            <tr>
+                <td class="info-box info-box-date">
+                    <div class="info-label">Date</div>
+                    <div class="info-value" th:text="${#temporals.format(kickoffLocal, 'MMM d, yyyy')}">Oct 3, 2025
+                    </div>
+                </td>
+                <td class="info-box info-box-time">
+                    <div class="info-label">Kickoff</div>
+                    <div class="info-value" th:text="${#temporals.format(kickoffLocal, 'h:mm a')}">6:00 AM</div>
+                </td>
+                <td class="info-box info-box-timezone">
+                    <div class="info-label">Local Timezone</div>
+                    <div class="info-value" th:text="${kickoffTz}">America/New_York</div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>You're receiving this because you subscribed to match notifications.</p>
+        <p>
+            <a href="#">Manage Preferences</a> •
+            <a href="#">Unsubscribe</a>
+        </p>
+    </div>
+</div>
 </body>
 </html>
