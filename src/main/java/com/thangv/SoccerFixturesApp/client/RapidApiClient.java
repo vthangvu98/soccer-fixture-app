@@ -9,6 +9,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.concurrent.TimeoutException;
 
 @Component
 public class RapidApiClient {
@@ -57,9 +58,9 @@ public class RapidApiClient {
                         .build())
                 .retrieve()
                 .bodyToMono(TeamRapidApiResponse.class)
-                .timeout(Duration.ofSeconds(20))
-                .retryWhen(reactor.util.retry.Retry.backoff(2, Duration.ofMillis(300))
-                        .filter(ex -> ex instanceof IOException))
+                .timeout(Duration.ofSeconds(60))
+                .retryWhen(reactor.util.retry.Retry.backoff(3, Duration.ofSeconds(2))
+                        .filter(ex -> ex instanceof IOException || ex instanceof TimeoutException))
                 .block();
     }
 

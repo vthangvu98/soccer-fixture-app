@@ -19,7 +19,7 @@ public class User {
     @Column(unique = true)
     private String phone;
 
-    @Column(nullable = false, name = "tz")
+    @Column(nullable = false, name = "timezone")
     private String timezone = "UTC";
 
     @Column(nullable = false)
