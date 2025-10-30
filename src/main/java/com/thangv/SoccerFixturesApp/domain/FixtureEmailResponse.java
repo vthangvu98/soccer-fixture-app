@@ -1,9 +1,7 @@
 package com.thangv.SoccerFixturesApp.domain;
 
 import lombok.Builder;
-import lombok.Value;
 
-@Value
 @Builder
 public class FixtureEmailResponse {
     boolean success;

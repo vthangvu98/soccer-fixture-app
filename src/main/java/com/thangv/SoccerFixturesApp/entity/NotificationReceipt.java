@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-// NotificationReceipt.java
 @Entity
 @Table(name = "notification_receipts",
         uniqueConstraints = @UniqueConstraint(name = "ux_user_fix_kind_channel",

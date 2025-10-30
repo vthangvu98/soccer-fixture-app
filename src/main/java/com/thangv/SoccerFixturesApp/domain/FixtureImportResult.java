@@ -9,7 +9,7 @@ import java.util.Set;
 @AllArgsConstructor
 public class FixtureImportResult {
     private final int savedCount;
-    private final Set<Integer> missingLeagueIds;
-    private final Set<Integer> missingTeamIds;
+    private final Set<String> missingLeagueIds;
+    private final Set<String> missingTeamIds;
 }
 

@@ -44,6 +44,11 @@ public class NotificationService {
                 .map(League::getName)
                 .orElse("League");
 
+        log.info("Home team: {} (ID: {})", home.getName(), home.getId());
+        log.info("Away team: {} (ID: {})", away.getName(), away.getId());
+        log.info("Home logo URL: {}", home.getLogoUrl());
+        log.info("Away logo URL: {}", away.getLogoUrl());
+
         // Parse and validate timezone
         ZoneId zoneId = parseAndValidateTimezone(timezone);
         log.debug("Using timezone: {} for user {}", zoneId.getId(), to);
@@ -60,16 +65,33 @@ public class NotificationService {
             log.warn("Fixture {} has no match time set", fixture.getId());
         }
 
-        // Build email model
-        var model = new FixtureEmailModel(
-                leagueName,
-                home.getName(),
-                away.getName(),
-                kickoffLocal,
-                zoneId.getId(),
-                fixture.getHomeScore(),
-                fixture.getAwayScore()
-        );
+        // Calculate match status
+        ZonedDateTime now = ZonedDateTime.now(zoneId);
+        String matchStatus;
+        if (kickoffLocal.isAfter(now)) {
+            matchStatus = "UPCOMING";
+        } else if (kickoffLocal.plusHours(2).isAfter(now)) {
+            matchStatus = "LIVE";
+        } else {
+            matchStatus = "ENDED";
+        }
+
+        // Build email model with builder pattern
+        var model = FixtureEmailModel.builder()
+                .leagueName(leagueName)
+                .homeTeamName(home.getName())
+                .awayTeamName(away.getName())
+                .homeTeamLogo(home.getLogoUrl())
+                .awayTeamLogo(away.getLogoUrl())
+                .kickoffLocal(kickoffLocal)
+                .kickoffTz(zoneId.getId())
+                .homeScore(fixture.getHomeScore())
+                .awayScore(fixture.getAwayScore())
+                .matchStatus(matchStatus)
+                .build();
+
+        log.info("Email model created: league={}, home={}, away={}",
+                model.getLeagueName(), model.getHomeTeamName(), model.getAwayTeamName());
 
         // Render HTML template
         String html = renderer.renderFixture(model);

@@ -8,14 +8,18 @@ import com.thangv.SoccerFixturesApp.repository.LeagueRepository;
 import com.thangv.SoccerFixturesApp.repository.TeamRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TeamService {
 
     private final RapidApiClient rapidApiClient;
@@ -68,14 +72,44 @@ public class TeamService {
     }
 
     @Transactional
-    public int importAllTeamsByLeague() {
+    public Map<String, Object> importAllTeamsByLeague() {
+        var leagueIds = leagueRepository.findAll().stream()
+                .map(League::getId)
+                .toList();
 
-        var leagueIds = leagueRepository.findAll().stream().map(League::getId).toList();
+        int totalSuccess = 0;
+        int totalFailed = 0;
+        List<String> failedLeagues = new ArrayList<>();
 
-        int total = 0;
+        log.info("Starting team import for {} leagues", leagueIds.size());
+
         for (Integer leagueId : leagueIds) {
-            total += importTeamsByLeagueId(leagueId);
+            try {
+                log.info("Importing teams for league {}", leagueId);
+                int count = importTeamsByLeagueId(leagueId);
+                totalSuccess += count;
+                log.info("Successfully imported {} teams for league {}", count, leagueId);
+
+                // Small delay to avoid rate limiting
+                Thread.sleep(500);
+
+            } catch (Exception e) {
+                totalFailed++;
+                var leagueName = leagueRepository.findById(leagueId)
+                        .map(League::getName)
+                        .orElse("Unknown");
+                failedLeagues.add(leagueName + " (ID: " + leagueId + ")");
+                log.error("Failed to import teams for league {}: {}", leagueId, e.getMessage());
+            }
         }
-        return total;
+
+        log.info("Team import completed. Success: {}, Failed: {}", totalSuccess, totalFailed);
+
+        return Map.of(
+                "totalTeamsImported", totalSuccess,
+                "totalLeaguesProcessed", leagueIds.size(),
+                "failedLeaguesCount", totalFailed,
+                "failedLeagues", failedLeagues
+        );
     }
 }
