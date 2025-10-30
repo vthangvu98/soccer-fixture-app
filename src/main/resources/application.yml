@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/fixturesdb
-    username: postgres
-    password: postgres
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/fixturesdb}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
   flyway:
     baseline-on-migrate: true
@@ -20,10 +20,10 @@ spring:
         format_sql: true
 
 aws:
-  region: us-east-2
+  region: ${AWS_REGION:us-east-2}
   ses:
-    from: "vthangvu98@gmail.com"
+    from: ${AWS_SES_FROM:vthangvu98@gmail.com}
 
 rapidapi:
-  key: 89316196bfmsh1787170b39e4ca0p18c6b7jsn63ad29af3405
-  host: free-api-live-football-data.p.rapidapi.com
+  key: ${RAPIDAPI_KEY}
+  host: ${RAPIDAPI_HOST:free-api-live-football-data.p.rapidapi.com}
